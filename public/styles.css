@@ -1,0 +1,86 @@
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.texture-list {
+    margin-top: 20px;
+}
+
+.texture-item {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 4px;
+}
+
+button {
+    padding: 8px 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+.disconnected button {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.disconnected .texture-list {
+    opacity: 0.5;
+}
+
+.connection-status {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    background: #28a745;
+    color: white;
+    font-weight: bold;
+}
+
+.disconnected .connection-status {
+    background: #dc3545;
+}
+
+.disconnected .connection-status::after {
+    content: 'Disconnected';
+}
+
+.connection-status::after {
+    content: 'Connected';
+}
+
+body.disconnected .connection-status {
+    background-color: #ff4444;
+    color: white;
+}
+
+body:not(.disconnected) .connection-status {
+    background-color: #44ff44;
+    color: black;
+}
+
+.texture-item {
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+}
+
+#refreshButton {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
