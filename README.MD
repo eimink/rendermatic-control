@@ -1,11 +1,27 @@
 # Rendermatic Control
 
-A WebSocket client for sending control commands to a rendermatic server.
+A web-based control panel for managing [Rendermatic](https://github.com/eimink/rendermatic) display devices on the local network. Discovers devices automatically via mDNS and provides a multi-device dashboard for textures, video playback, and device configuration.
+
+## Features
+
+- Automatic device discovery via mDNS (`_rendermatic._tcp`)
+- Multi-device dashboard with per-device controls
+- Texture management (scan, set)
+- Video playback (local files, RTMP, RTSP, SRT, HLS streams)
+- Device authentication support
+- Device renaming
+- Manual device add for networks without mDNS
+- Three switchable dark themes
+
+## Requirements
+
+- Node.js 24+
 
 ## Installation
 
 ```bash
 npm install
+npm run build
 ```
 
 ## Usage
@@ -14,18 +30,28 @@ npm install
 npm start
 ```
 
-The client will connect to a WebSocket server and can send control commands.
+Open `http://localhost:3000` in a browser. Devices on the network will appear automatically.
 
-## Available Commands
+## Docker
 
-- `list_textures`: Get a list of available textures
-- `load_texture`: Load a texture file (requires texture parameter)
-- `set_texture`: Set the current texture (requires texture parameter)
+Build and run with Docker Compose:
 
-### Example Usage
-```typescript
-client.sendCommand({ command: 'list_textures' });
-client.sendCommand({ command: 'load_texture', texture: 'image.png' });
-client.sendCommand({ command: 'set_texture', texture: 'image.png' });
+```bash
+docker compose up -d
 ```
 
+Or build and run directly:
+
+```bash
+docker build -t rendermatic-control .
+docker run --network host rendermatic-control
+```
+
+Host networking is required for mDNS device discovery. Without it, multicast traffic won't reach the container and automatic discovery won't work. Manual device add (`IP:Port`) still works in bridged mode.
+
+## Development
+
+```bash
+npm run build-dev    # webpack dev build with source maps
+npm start            # start the server
+```

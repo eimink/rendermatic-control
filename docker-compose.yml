@@ -1,0 +1,8 @@
+services:
+  rendermatic-control:
+    build: .
+    # Host networking is required for mDNS device discovery.
+    # Without it, multicast traffic won't reach the container
+    # and no devices will be found automatically.
+    network_mode: host
+    restart: unless-stopped
