@@ -34,13 +34,23 @@ Open `http://localhost:3000` in a browser. Devices on the network will appear au
 
 ## Docker
 
-Build and run with Docker Compose:
+Pull the latest release from GHCR:
 
 ```bash
-docker compose up -d
+docker run --network host ghcr.io/eimink/rendermatic-control:latest
 ```
 
-Or build and run directly:
+Or use Docker Compose:
+
+```yaml
+services:
+  rendermatic-control:
+    image: ghcr.io/eimink/rendermatic-control:latest
+    network_mode: host
+    restart: unless-stopped
+```
+
+To build locally instead:
 
 ```bash
 docker build -t rendermatic-control .
