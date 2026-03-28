@@ -15,7 +15,16 @@ module.exports = {
         rules: [
             {
                 test: /\.ts$/,
-                use: 'ts-loader',
+                use: {
+                    loader: 'ts-loader',
+                    options: {
+                        compilerOptions: {
+                            noEmit: false,
+                            allowImportingTsExtensions: false,
+                            rewriteRelativeImportExtensions: true,
+                        }
+                    }
+                },
                 exclude: /node_modules/,
             },
         ],

@@ -2,15 +2,43 @@
 <html>
 <head>
     <title>Rendermatic Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="disconnected">
-    <div class="connection-status"></div>
-    <div class="container">
+<body class="disconnected" data-theme="demoscene">
+    <script>
+        // Apply saved theme before first paint to avoid flash
+        const saved = localStorage.getItem('rm-theme');
+        if (saved) document.body.setAttribute('data-theme', saved);
+    </script>
+    <div class="top-bar">
         <h1>Rendermatic Control</h1>
-        <button id="refreshButton">Refresh Texture List</button>
-        <div id="textureList" class="texture-list"></div>
+        <div class="top-bar-right">
+            <div class="theme-picker">
+                <button class="theme-btn-demoscene" data-theme-value="demoscene" title="Demoscene">D</button>
+                <button class="theme-btn-lcd" data-theme-value="lcd" title="Retro LCD">L</button>
+                <button class="theme-btn-modern" data-theme-value="modern" title="Modern">M</button>
+            </div>
+            <div class="control-plane-status">
+                <span class="status-dot"></span>
+                <span class="status-text">Connecting...</span>
+            </div>
+        </div>
     </div>
+
+    <div class="container">
+        <div id="noDevices" class="no-devices">
+            <p>Searching for devices on the network...</p>
+        </div>
+
+        <div class="manual-add">
+            <input type="text" id="manualAddress" placeholder="IP:Port (e.g. 192.168.1.100:9002)">
+            <button id="manualAddBtn">Add Device</button>
+        </div>
+
+        <div id="deviceList" class="device-list"></div>
+    </div>
+
     <script src="client.js"></script>
     <script src="init.js"></script>
 </body>

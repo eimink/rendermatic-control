@@ -15,6 +15,8 @@ tmp
 
 # Build
 public/css/main.css
+public/client.js
+public/client.js.map
 
 # Coverage reports
 coverage
