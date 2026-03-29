@@ -236,6 +236,28 @@ export class DeviceClient {
         this.sendCommand({ command: 'get_playlist_status' });
     }
 
+    // NDI commands
+    scanNdiSources(): void {
+        this.sendCommand({ command: 'scan_ndi_sources' });
+    }
+
+    setNdiSource(source: string): void {
+        this.sendCommand({ command: 'set_ndi_source', source });
+    }
+
+    getNdiStatus(): void {
+        this.sendCommand({ command: 'get_ndi_status' });
+    }
+
+    stopNdi(): void {
+        this.sendCommand({ command: 'stop_ndi' });
+    }
+
+    // Display commands
+    setRotation(rotation: 0 | 90 | 180 | 270): void {
+        this.sendCommand({ command: 'set_rotation', rotation });
+    }
+
     // State
     isConnected(): boolean {
         return this.ws !== null && this.ws.readyState === WebSocket.OPEN;

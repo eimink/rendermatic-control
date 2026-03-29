@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Tab bar
         const tabBar = document.createElement('div');
         tabBar.className = 'tab-bar';
-        const tabs = ['Device', 'Images', 'Videos'];
+        const tabs = ['Device', 'Images', 'Videos', 'NDI'];
         const tabButtons = {};
         const tabPanes = {};
 
@@ -239,6 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.className = 'tab-btn';
             btn.textContent = name;
             btn.addEventListener('click', () => switchTab(name));
+            if (name === 'NDI') btn.style.display = 'none'; // hidden until ndiAvailable
             tabBar.appendChild(btn);
             tabButtons[name] = btn;
         });
@@ -256,6 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tabContent.appendChild(pane);
             tabPanes[name] = pane;
         });
+
+        let ndiAvailable = false;
 
         function switchTab(name) {
             tabs.forEach(t => {
@@ -309,6 +312,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (confirm('Remove authentication key? Device will be open to all.')) {
                 client.clearAuthKey();
             }
+        });
+
+        // Rotation control
+        const rotationSection = document.createElement('div');
+        rotationSection.className = 'section';
+        rotationSection.innerHTML = `
+            <h3>Display Rotation</h3>
+            <div class="rotation-controls">
+                <button class="rotation-btn" data-rotation="0">0\u00b0</button>
+                <button class="rotation-btn" data-rotation="90">90\u00b0</button>
+                <button class="rotation-btn" data-rotation="180">180\u00b0</button>
+                <button class="rotation-btn" data-rotation="270">270\u00b0</button>
+            </div>
+        `;
+        devicePane.appendChild(rotationSection);
+
+        rotationSection.querySelectorAll('.rotation-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                client.setRotation(parseInt(btn.dataset.rotation, 10));
+            });
         });
 
         // =====================================================================
@@ -509,6 +532,46 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPlaylist();
 
         // =====================================================================
+        // NDI tab
+        // =====================================================================
+        const ndiPane = tabPanes['NDI'];
+
+        const ndiControls = document.createElement('div');
+        ndiControls.className = 'tab-pane-toolbar';
+        ndiControls.innerHTML = '<button class="scan-ndi-btn">Scan Sources</button>';
+        ndiPane.appendChild(ndiControls);
+
+        const scanNdiBtn = ndiControls.querySelector('.scan-ndi-btn');
+        scanNdiBtn.addEventListener('click', () => client.scanNdiSources());
+
+        let activeNdiSource = '';
+
+        const ndiSourceList = createFilterableList({
+            actions: [{ label: 'Connect', handler: (name) => client.setNdiSource(name) }],
+            getActiveItem: () => activeNdiSource,
+        });
+        ndiPane.appendChild(ndiSourceList.element);
+
+        const ndiStatusSection = document.createElement('div');
+        ndiStatusSection.className = 'section';
+        ndiStatusSection.innerHTML = `
+            <h3>NDI Status</h3>
+            <div class="ndi-controls">
+                <button class="danger ndi-stop-btn">Disconnect</button>
+                <button class="ndi-refresh-btn">Refresh Status</button>
+            </div>
+            <div class="ndi-status-display">No NDI source connected</div>
+        `;
+        ndiPane.appendChild(ndiStatusSection);
+
+        const ndiStopBtn = ndiStatusSection.querySelector('.ndi-stop-btn');
+        const ndiRefreshBtn = ndiStatusSection.querySelector('.ndi-refresh-btn');
+        const ndiStatusDisplay = ndiStatusSection.querySelector('.ndi-status-display');
+
+        ndiStopBtn.addEventListener('click', () => client.stopNdi());
+        ndiRefreshBtn.addEventListener('click', () => client.getNdiStatus());
+
+        // =====================================================================
         // Response handlers
         // =====================================================================
 
@@ -569,9 +632,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resp.wsPort) html += `<span class="label">Port</span><span>${resp.wsPort}</span>`;
             if (resp.currentTexture) html += `<span class="label">Texture</span><span>${esc(resp.currentTexture)}</span>`;
             html += `<span class="label">Auth</span><span>${resp.authEnabled ? 'Enabled' : 'Disabled'}</span>`;
+            html += `<span class="label">NDI</span><span>${resp.ndiAvailable ? 'Available' : 'Not available'}</span>`;
             infoGrid.innerHTML = html;
 
             clearKeyBtn.style.display = resp.authEnabled ? '' : 'none';
+
+            // Show/hide NDI tab based on device capability
+            if (resp.ndiAvailable && !ndiAvailable) {
+                ndiAvailable = true;
+                tabButtons['NDI'].style.display = '';
+                client.getNdiStatus();
+            } else if (!resp.ndiAvailable) {
+                ndiAvailable = false;
+                tabButtons['NDI'].style.display = 'none';
+            }
+
             textureList.refresh();
         });
 
@@ -704,6 +779,50 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         client.on('identify_response', () => {});
+
+        // NDI responses
+        client.on('ndi_sources', (resp) => {
+            if (resp.success) ndiSourceList.setItems(resp.sources);
+        });
+
+        client.on('set_ndi_source_response', (resp) => {
+            if (resp.success) client.getNdiStatus();
+        });
+
+        client.on('ndi_status', (resp) => {
+            if (!resp.success) return;
+            if (resp.active) {
+                activeNdiSource = resp.source;
+                ndiStatusDisplay.className = 'ndi-status-display active';
+                ndiStatusDisplay.innerHTML = `
+                    <strong>Connected</strong>
+                    <div class="video-meta">
+                        <span class="label">Source</span><span>${esc(resp.source)}</span>
+                        <span class="label">Resolution</span><span>${resp.width}x${resp.height}</span>
+                        <span class="label">FPS</span><span>${resp.fps}</span>
+                    </div>
+                `;
+            } else {
+                activeNdiSource = '';
+                ndiStatusDisplay.className = 'ndi-status-display';
+                ndiStatusDisplay.textContent = 'No NDI source connected';
+            }
+            ndiSourceList.refresh();
+        });
+
+        client.on('stop_ndi_response', (resp) => {
+            if (resp.success) {
+                activeNdiSource = '';
+                ndiStatusDisplay.className = 'ndi-status-display';
+                ndiStatusDisplay.textContent = 'No NDI source connected';
+                ndiSourceList.refresh();
+            }
+        });
+
+        // Rotation response
+        client.on('set_rotation_response', (resp) => {
+            if (resp.success) client.getDeviceInfo();
+        });
 
         // Connection state
         client.setConnectionCallback((connected) => {

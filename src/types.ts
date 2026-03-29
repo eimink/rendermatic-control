@@ -99,6 +99,28 @@ export type GetPlaylistStatusCommand = {
     command: 'get_playlist_status';
 };
 
+export type ScanNdiSourcesCommand = {
+    command: 'scan_ndi_sources';
+};
+
+export type SetNdiSourceCommand = {
+    command: 'set_ndi_source';
+    source: string;
+};
+
+export type GetNdiStatusCommand = {
+    command: 'get_ndi_status';
+};
+
+export type StopNdiCommand = {
+    command: 'stop_ndi';
+};
+
+export type SetRotationCommand = {
+    command: 'set_rotation';
+    rotation: 0 | 90 | 180 | 270;
+};
+
 export type ControlCommand =
     | AuthenticateCommand
     | SetAuthKeyCommand
@@ -121,7 +143,12 @@ export type ControlCommand =
     | StopPlaylistCommand
     | NextVideoCommand
     | PrevVideoCommand
-    | GetPlaylistStatusCommand;
+    | GetPlaylistStatusCommand
+    | ScanNdiSourcesCommand
+    | SetNdiSourceCommand
+    | GetNdiStatusCommand
+    | StopNdiCommand
+    | SetRotationCommand;
 
 // --- Response types ---
 
@@ -162,6 +189,7 @@ export type DeviceInfoResponse = BaseResponse & {
     authEnabled?: boolean;
     authRequired?: boolean;
     authenticated?: boolean;
+    ndiAvailable?: boolean;
 };
 
 export type DeviceNameResponse = BaseResponse & {
@@ -257,6 +285,33 @@ export type PlaylistStatusResponse = BaseResponse & {
     loop: boolean;
 };
 
+export type NdiSourcesResponse = BaseResponse & {
+    command: 'ndi_sources';
+    sources: string[];
+};
+
+export type SetNdiSourceResponse = BaseResponse & {
+    command: 'set_ndi_source_response';
+};
+
+export type NdiStatusResponse = BaseResponse & {
+    command: 'ndi_status';
+    active: boolean;
+    source: string;
+    width: number;
+    height: number;
+    fps: number;
+};
+
+export type StopNdiResponse = BaseResponse & {
+    command: 'stop_ndi_response';
+};
+
+export type SetRotationResponse = BaseResponse & {
+    command: 'set_rotation_response';
+    rotation: number;
+};
+
 export type ErrorResponse = BaseResponse & {
     command: 'error';
 };
@@ -284,6 +339,11 @@ export type ServerResponse =
     | NextVideoResponse
     | PrevVideoResponse
     | PlaylistStatusResponse
+    | NdiSourcesResponse
+    | SetNdiSourceResponse
+    | NdiStatusResponse
+    | StopNdiResponse
+    | SetRotationResponse
     | AuthRequiredResponse
     | ErrorResponse;
 

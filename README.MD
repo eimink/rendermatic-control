@@ -10,6 +10,8 @@ A web-based control panel for managing [Rendermatic](https://github.com/eimink/r
 - Video file management (scan, filter, play)
 - Video playback (local files, RTMP, RTSP, SRT, HLS streams)
 - Playlist support (build, reorder, loop, prev/next controls)
+- NDI source discovery and connection (shown when device supports NDI)
+- Display rotation control (0/90/180/270)
 - Device identify (on-screen overlay showing hostname/IP/port)
 - Device authentication support
 - Device renaming

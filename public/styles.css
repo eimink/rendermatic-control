@@ -669,6 +669,44 @@ button:disabled {
 }
 
 /* ==========================================================================
+   Rotation controls
+   ========================================================================== */
+.rotation-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.rotation-btn {
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+}
+
+.rotation-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
+}
+
+/* ==========================================================================
+   NDI
+   ========================================================================== */
+.ndi-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.ndi-status-display {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.ndi-status-display.active {
+    color: var(--video-active);
+}
+
+/* ==========================================================================
    Playlist
    ========================================================================== */
 .playlist-controls {
