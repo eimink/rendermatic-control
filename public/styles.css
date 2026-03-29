@@ -359,6 +359,17 @@ button:disabled {
     margin-top: 2px;
 }
 
+.device-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.identify-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
 .device-connection-dot {
     width: 10px;
     height: 10px;
@@ -371,17 +382,151 @@ button:disabled {
     background: var(--status-connected);
 }
 
-.device-panel-body {
+/* Auth section sits between header and tabs, outside tab content */
+
+/* ==========================================================================
+   Tabs
+   ========================================================================== */
+.tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-panel-header);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    color: var(--text-secondary);
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+    background: transparent;
+}
+
+.tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.tab-content {
     padding: 18px;
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
 
+.tab-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tab-pane-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* ==========================================================================
+   Filterable file list
+   ========================================================================== */
+.file-list-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.file-list-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.file-list-filter {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 13px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--panel-radius);
+    color: var(--text-primary);
+    font-family: var(--font-main);
+}
+
+.file-list-filter:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: var(--glow);
+}
+
+.file-list-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.file-list-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.file-list-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--bg-surface);
+    border-radius: var(--panel-radius);
+    font-size: 13px;
+}
+
+.file-list-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-list-name.active {
+    color: var(--active-texture);
+    font-weight: 600;
+}
+
+.file-list-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.file-list-item button {
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+.playlist-add-btn {
+    padding: 4px 8px !important;
+    font-size: 14px !important;
+    line-height: 1;
+}
+
 /* ==========================================================================
    Auth section
    ========================================================================== */
 .auth-section {
+    margin: 14px 18px;
     padding: 14px;
     background: var(--bg-elevated);
     border-radius: var(--panel-radius);
@@ -469,47 +614,10 @@ button:disabled {
 }
 
 /* ==========================================================================
-   Textures
+   Stream section
    ========================================================================== */
-.texture-controls {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
-.texture-items {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    max-height: 240px;
-    overflow-y: auto;
-}
-
-.texture-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    background: var(--bg-surface);
-    border-radius: var(--panel-radius);
-    font-size: 13px;
-}
-
-.texture-item .texture-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.texture-item .texture-name.active {
-    color: var(--active-texture);
-    font-weight: 600;
-}
-
-.texture-item button {
-    padding: 4px 10px;
-    font-size: 12px;
+.stream-section {
+    margin-top: 4px;
 }
 
 /* ==========================================================================
@@ -561,6 +669,88 @@ button:disabled {
 }
 
 /* ==========================================================================
+   Playlist
+   ========================================================================== */
+.playlist-controls {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.playlist-controls label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.playlist-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+}
+
+.playlist-empty {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 8px 0;
+}
+
+.playlist-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--bg-surface);
+    border-radius: var(--panel-radius);
+    font-size: 13px;
+}
+
+.playlist-item.playing {
+    border-left: 3px solid var(--accent);
+}
+
+.playlist-index {
+    color: var(--text-muted);
+    min-width: 24px;
+}
+
+.playlist-item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.playlist-item.playing .playlist-item-name {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.playlist-item-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.playlist-item-actions button {
+    padding: 2px 8px;
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.playlist-status-display {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* ==========================================================================
    Demoscene extras — scanlines & glow
    ========================================================================== */
 [data-theme="demoscene"] .device-panel {
@@ -580,8 +770,12 @@ button:disabled {
     box-shadow: 0 0 8px rgba(255, 0, 255, 0.3);
 }
 
-[data-theme="demoscene"] .texture-item .texture-name.active {
+[data-theme="demoscene"] .file-list-name.active {
     text-shadow: 0 0 6px rgba(0, 255, 255, 0.5);
+}
+
+[data-theme="demoscene"] .tab-btn.active {
+    text-shadow: 0 0 8px rgba(255, 0, 255, 0.5);
 }
 
 /* ==========================================================================
@@ -636,7 +830,8 @@ button:disabled {
         grid-template-columns: 1fr;
     }
 
-    .video-form {
+    .video-form,
+    .file-list-toolbar {
         flex-direction: column;
     }
 

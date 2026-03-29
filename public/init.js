@@ -99,6 +99,85 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- Reusable filterable file list ---
+
+    function createFilterableList({ actions, getActiveItem }) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'file-list-wrapper';
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'file-list-toolbar';
+
+        const filterInput = document.createElement('input');
+        filterInput.type = 'text';
+        filterInput.placeholder = 'Filter...';
+        filterInput.className = 'file-list-filter';
+        toolbar.appendChild(filterInput);
+
+        const countEl = document.createElement('span');
+        countEl.className = 'file-list-count';
+        toolbar.appendChild(countEl);
+
+        wrapper.appendChild(toolbar);
+
+        const listEl = document.createElement('div');
+        listEl.className = 'file-list-items';
+        wrapper.appendChild(listEl);
+
+        let allItems = [];
+
+        function render() {
+            const filter = filterInput.value.toLowerCase();
+            const active = getActiveItem ? getActiveItem() : '';
+            const filtered = filter
+                ? allItems.filter(name => name.toLowerCase().includes(filter))
+                : allItems;
+
+            countEl.textContent = filter
+                ? `${filtered.length}/${allItems.length}`
+                : `${allItems.length}`;
+
+            listEl.innerHTML = '';
+            filtered.forEach(name => {
+                const item = document.createElement('div');
+                item.className = 'file-list-item';
+
+                const nameEl = document.createElement('span');
+                nameEl.className = 'file-list-name' + (name === active ? ' active' : '');
+                nameEl.textContent = name;
+                item.appendChild(nameEl);
+
+                const btnGroup = document.createElement('div');
+                btnGroup.className = 'file-list-actions';
+                actions.forEach(action => {
+                    const btn = document.createElement('button');
+                    btn.textContent = action.label;
+                    if (action.className) btn.className = action.className;
+                    btn.onclick = () => action.handler(name);
+                    btnGroup.appendChild(btn);
+                });
+                item.appendChild(btnGroup);
+
+                listEl.appendChild(item);
+            });
+        }
+
+        filterInput.addEventListener('input', render);
+
+        return {
+            element: wrapper,
+            setItems(items) {
+                allItems = items;
+                render();
+            },
+            refresh() {
+                render();
+            }
+        };
+    }
+
+    // --- Device panel ---
+
     function createDevicePanel(device, client) {
         const panel = document.createElement('div');
         panel.className = 'device-panel device-disconnected';
@@ -111,15 +190,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="device-name">${esc(device.instanceName)}</div>
                 <div class="device-address">${esc(device.ip)}:${device.port}</div>
             </div>
-            <div class="device-connection-dot"></div>
+            <div class="device-header-actions">
+                <button class="identify-btn" title="Identify device on screen">Identify</button>
+                <div class="device-connection-dot"></div>
+            </div>
         `;
         panel.appendChild(header);
 
-        const body = document.createElement('div');
-        body.className = 'device-panel-body';
-        panel.appendChild(body);
+        const identifyBtn = header.querySelector('.identify-btn');
+        identifyBtn.addEventListener('click', () => client.identify());
 
-        // Auth section (hidden initially)
+        // Auth section (above tabs, blocks everything)
         const authSection = document.createElement('div');
         authSection.className = 'auth-section';
         authSection.style.display = 'none';
@@ -131,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="auth-message"></div>
         `;
-        body.appendChild(authSection);
+        panel.appendChild(authSection);
 
         const authInput = authSection.querySelector('.auth-key-input');
         const authSubmitBtn = authSection.querySelector('.auth-submit-btn');
@@ -146,7 +227,50 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Enter') authSubmitBtn.click();
         });
 
-        // Device info section
+        // Tab bar
+        const tabBar = document.createElement('div');
+        tabBar.className = 'tab-bar';
+        const tabs = ['Device', 'Images', 'Videos'];
+        const tabButtons = {};
+        const tabPanes = {};
+
+        tabs.forEach(name => {
+            const btn = document.createElement('button');
+            btn.className = 'tab-btn';
+            btn.textContent = name;
+            btn.addEventListener('click', () => switchTab(name));
+            tabBar.appendChild(btn);
+            tabButtons[name] = btn;
+        });
+        panel.appendChild(tabBar);
+
+        // Tab content container
+        const tabContent = document.createElement('div');
+        tabContent.className = 'tab-content';
+        panel.appendChild(tabContent);
+
+        tabs.forEach(name => {
+            const pane = document.createElement('div');
+            pane.className = 'tab-pane';
+            pane.style.display = 'none';
+            tabContent.appendChild(pane);
+            tabPanes[name] = pane;
+        });
+
+        function switchTab(name) {
+            tabs.forEach(t => {
+                tabButtons[t].classList.toggle('active', t === name);
+                tabPanes[t].style.display = t === name ? '' : 'none';
+            });
+        }
+
+        switchTab('Device');
+
+        // =====================================================================
+        // Device tab
+        // =====================================================================
+        const devicePane = tabPanes['Device'];
+
         const infoSection = document.createElement('div');
         infoSection.className = 'section';
         infoSection.innerHTML = `
@@ -162,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="clear-key-btn danger" style="display:none">Clear Key</button>
             </div>
         `;
-        body.appendChild(infoSection);
+        devicePane.appendChild(infoSection);
 
         const infoGrid = infoSection.querySelector('.device-info-grid');
         const nameInput = infoSection.querySelector('.name-input');
@@ -187,71 +311,222 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Texture section
-        const textureSection = document.createElement('div');
-        textureSection.className = 'section';
-        textureSection.innerHTML = `
-            <h3>Textures</h3>
-            <div class="texture-controls">
-                <button class="scan-btn">Scan Textures</button>
-            </div>
-            <div class="texture-items"></div>
-        `;
-        body.appendChild(textureSection);
+        // =====================================================================
+        // Images tab
+        // =====================================================================
+        const imagesPane = tabPanes['Images'];
 
-        const scanBtn = textureSection.querySelector('.scan-btn');
-        const textureItems = textureSection.querySelector('.texture-items');
+        const textureControls = document.createElement('div');
+        textureControls.className = 'tab-pane-toolbar';
+        textureControls.innerHTML = '<button class="scan-textures-btn">Scan</button>';
+        imagesPane.appendChild(textureControls);
 
-        scanBtn.addEventListener('click', () => client.scanTextures());
+        const scanTexturesBtn = textureControls.querySelector('.scan-textures-btn');
+        scanTexturesBtn.addEventListener('click', () => client.scanTextures());
 
-        // Video section
-        const videoSection = document.createElement('div');
-        videoSection.className = 'section';
-        videoSection.innerHTML = `
-            <h3>Video</h3>
+        let currentTexture = '';
+
+        const textureList = createFilterableList({
+            actions: [{ label: 'Set', handler: (name) => client.setTexture(name) }],
+            getActiveItem: () => currentTexture,
+        });
+        imagesPane.appendChild(textureList.element);
+
+        // =====================================================================
+        // Videos tab
+        // =====================================================================
+        const videosPane = tabPanes['Videos'];
+
+        // Video file list with scan
+        const videoFileControls = document.createElement('div');
+        videoFileControls.className = 'tab-pane-toolbar';
+        videoFileControls.innerHTML = '<button class="scan-videos-btn">Scan</button>';
+        videosPane.appendChild(videoFileControls);
+
+        const scanVideosBtn = videoFileControls.querySelector('.scan-videos-btn');
+        scanVideosBtn.addEventListener('click', () => client.scanVideos());
+
+        const videoList = createFilterableList({
+            actions: [
+                { label: 'Play', handler: (name) => client.playVideo(name, videoLoopCheck.checked) },
+                { label: '+', className: 'playlist-add-btn', handler: (name) => addToPlaylist(name) },
+            ],
+            getActiveItem: () => '',
+        });
+        videosPane.appendChild(videoList.element);
+
+        // Stream input
+        const streamSection = document.createElement('div');
+        streamSection.className = 'section stream-section';
+        streamSection.innerHTML = `
+            <h3>Stream</h3>
             <div class="video-form">
-                <input type="text" placeholder="Video source (URL or path)" class="video-source-input">
+                <input type="text" placeholder="Stream URL (RTMP, RTSP, SRT, HLS)" class="video-source-input">
                 <label><input type="checkbox" class="video-loop-check" checked> Loop</label>
                 <button class="primary play-btn">Play</button>
             </div>
-            <div class="video-controls">
-                <button class="danger stop-btn">Stop Video</button>
-                <button class="status-btn">Refresh Status</button>
-            </div>
-            <div class="video-status-display">No video info</div>
         `;
-        body.appendChild(videoSection);
+        videosPane.appendChild(streamSection);
 
-        const videoSourceInput = videoSection.querySelector('.video-source-input');
-        const videoLoopCheck = videoSection.querySelector('.video-loop-check');
-        const playBtn = videoSection.querySelector('.play-btn');
-        const stopBtn = videoSection.querySelector('.stop-btn');
-        const statusBtn = videoSection.querySelector('.status-btn');
-        const videoStatusDisplay = videoSection.querySelector('.video-status-display');
+        const videoSourceInput = streamSection.querySelector('.video-source-input');
+        const videoLoopCheck = streamSection.querySelector('.video-loop-check');
+        const playBtn = streamSection.querySelector('.play-btn');
 
         playBtn.addEventListener('click', () => {
             const source = videoSourceInput.value.trim();
             if (source) client.playVideo(source, videoLoopCheck.checked);
         });
 
+        // Playback status
+        const videoStatusSection = document.createElement('div');
+        videoStatusSection.className = 'section';
+        videoStatusSection.innerHTML = `
+            <h3>Playback</h3>
+            <div class="video-controls">
+                <button class="danger stop-btn">Stop</button>
+                <button class="status-btn">Refresh Status</button>
+            </div>
+            <div class="video-status-display">No video info</div>
+        `;
+        videosPane.appendChild(videoStatusSection);
+
+        const stopBtn = videoStatusSection.querySelector('.stop-btn');
+        const statusBtn = videoStatusSection.querySelector('.status-btn');
+        const videoStatusDisplay = videoStatusSection.querySelector('.video-status-display');
+
         stopBtn.addEventListener('click', () => client.stopVideo());
         statusBtn.addEventListener('click', () => client.getVideoStatus());
 
-        // Track current texture for highlighting
-        let currentTexture = '';
+        // Playlist section
+        const playlistSection = document.createElement('div');
+        playlistSection.className = 'section playlist-section';
+        playlistSection.innerHTML = `
+            <h3>Playlist</h3>
+            <div class="playlist-controls">
+                <button class="playlist-start-btn primary">Start</button>
+                <button class="playlist-stop-btn danger">Stop</button>
+                <button class="playlist-prev-btn">Prev</button>
+                <button class="playlist-next-btn">Next</button>
+                <label><input type="checkbox" class="playlist-loop-check" checked> Loop</label>
+                <button class="playlist-clear-btn">Clear</button>
+            </div>
+            <div class="playlist-items"></div>
+            <div class="playlist-status-display"></div>
+        `;
+        videosPane.appendChild(playlistSection);
 
-        // --- Response handlers ---
+        const playlistStartBtn = playlistSection.querySelector('.playlist-start-btn');
+        const playlistStopBtn = playlistSection.querySelector('.playlist-stop-btn');
+        const playlistPrevBtn = playlistSection.querySelector('.playlist-prev-btn');
+        const playlistNextBtn = playlistSection.querySelector('.playlist-next-btn');
+        const playlistLoopCheck = playlistSection.querySelector('.playlist-loop-check');
+        const playlistClearBtn = playlistSection.querySelector('.playlist-clear-btn');
+        const playlistItemsEl = playlistSection.querySelector('.playlist-items');
+        const playlistStatusDisplay = playlistSection.querySelector('.playlist-status-display');
+
+        let playlistVideos = [];
+        let playlistCurrentIndex = -1;
+        let playlistActive = false;
+
+        function addToPlaylist(name) {
+            playlistVideos.push(name);
+            renderPlaylist();
+        }
+
+        function removeFromPlaylist(index) {
+            playlistVideos.splice(index, 1);
+            renderPlaylist();
+        }
+
+        function moveInPlaylist(from, to) {
+            if (to < 0 || to >= playlistVideos.length) return;
+            const item = playlistVideos.splice(from, 1)[0];
+            playlistVideos.splice(to, 0, item);
+            renderPlaylist();
+        }
+
+        function renderPlaylist() {
+            playlistItemsEl.innerHTML = '';
+            if (playlistVideos.length === 0) {
+                playlistItemsEl.innerHTML = '<div class="playlist-empty">Add videos with the + button above</div>';
+                return;
+            }
+            playlistVideos.forEach((name, i) => {
+                const item = document.createElement('div');
+                item.className = 'playlist-item' + (playlistActive && i === playlistCurrentIndex ? ' playing' : '');
+
+                const indexEl = document.createElement('span');
+                indexEl.className = 'playlist-index';
+                indexEl.textContent = `${i + 1}.`;
+                item.appendChild(indexEl);
+
+                const nameEl = document.createElement('span');
+                nameEl.className = 'playlist-item-name';
+                nameEl.textContent = name;
+                item.appendChild(nameEl);
+
+                const actions = document.createElement('div');
+                actions.className = 'playlist-item-actions';
+
+                const upBtn = document.createElement('button');
+                upBtn.textContent = '\u2191';
+                upBtn.disabled = i === 0;
+                upBtn.onclick = () => moveInPlaylist(i, i - 1);
+                actions.appendChild(upBtn);
+
+                const downBtn = document.createElement('button');
+                downBtn.textContent = '\u2193';
+                downBtn.disabled = i === playlistVideos.length - 1;
+                downBtn.onclick = () => moveInPlaylist(i, i + 1);
+                actions.appendChild(downBtn);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = '\u00d7';
+                removeBtn.className = 'danger';
+                removeBtn.onclick = () => removeFromPlaylist(i);
+                actions.appendChild(removeBtn);
+
+                item.appendChild(actions);
+                playlistItemsEl.appendChild(item);
+            });
+        }
+
+        playlistStartBtn.addEventListener('click', () => {
+            if (playlistVideos.length === 0) return;
+            client.setPlaylist(playlistVideos, playlistLoopCheck.checked);
+            // Start will be triggered after set_playlist_response
+        });
+
+        playlistStopBtn.addEventListener('click', () => client.stopPlaylist());
+        playlistPrevBtn.addEventListener('click', () => client.prevVideo());
+        playlistNextBtn.addEventListener('click', () => client.nextVideo());
+
+        playlistClearBtn.addEventListener('click', () => {
+            playlistVideos = [];
+            renderPlaylist();
+        });
+
+        renderPlaylist();
+
+        // =====================================================================
+        // Response handlers
+        // =====================================================================
 
         client.on('auth_status', (resp) => {
             if (resp.authRequired && !resp.authenticated) {
                 authSection.style.display = '';
+                tabBar.style.display = 'none';
+                tabContent.style.display = 'none';
                 setControlsEnabled(false);
             } else {
                 authSection.style.display = 'none';
+                tabBar.style.display = '';
+                tabContent.style.display = '';
                 setControlsEnabled(true);
-                // Fetch initial data once authenticated/open
                 client.getDeviceInfo();
                 client.scanTextures();
+                client.scanVideos();
+                client.getPlaylistStatus();
             }
         });
 
@@ -260,9 +535,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 authSection.style.display = 'none';
                 authMessage.textContent = '';
                 authInput.value = '';
+                tabBar.style.display = '';
+                tabContent.style.display = '';
                 setControlsEnabled(true);
                 client.getDeviceInfo();
                 client.scanTextures();
+                client.scanVideos();
+                client.getPlaylistStatus();
             } else {
                 authMessage.textContent = resp.message || 'Authentication failed';
                 authMessage.className = 'auth-message';
@@ -272,8 +551,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        client.on('auth_required', (resp) => {
+        client.on('auth_required', () => {
             authSection.style.display = '';
+            tabBar.style.display = 'none';
+            tabContent.style.display = 'none';
             setControlsEnabled(false);
         });
 
@@ -281,7 +562,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!resp.success) return;
             currentTexture = resp.currentTexture || '';
 
-            // Update header name
             header.querySelector('.device-name').textContent = resp.instanceName || device.instanceName;
 
             let html = '';
@@ -291,11 +571,8 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `<span class="label">Auth</span><span>${resp.authEnabled ? 'Enabled' : 'Disabled'}</span>`;
             infoGrid.innerHTML = html;
 
-            // Show/hide clear key button
             clearKeyBtn.style.display = resp.authEnabled ? '' : 'none';
-
-            // Re-render texture list to update active highlight
-            refreshTextureDisplay(textureItems, client, currentTexture);
+            textureList.refresh();
         });
 
         client.on('device_name_response', (resp) => {
@@ -319,21 +596,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         client.on('scan_textures_response', (resp) => {
-            if (resp.success) {
-                renderTextureList(textureItems, resp.textures, client, currentTexture);
-            }
+            if (resp.success) textureList.setItems(resp.textures);
         });
 
         client.on('texture_list', (resp) => {
-            if (resp.success) {
-                renderTextureList(textureItems, resp.textures, client, currentTexture);
-            }
+            if (resp.success) textureList.setItems(resp.textures);
         });
 
         client.on('set_texture_response', (resp) => {
-            if (resp.success) {
-                client.getDeviceInfo();
-            }
+            if (resp.success) client.getDeviceInfo();
+        });
+
+        client.on('scan_videos_response', (resp) => {
+            if (resp.success) videoList.setItems(resp.videos);
+        });
+
+        client.on('video_list', (resp) => {
+            if (resp.success) videoList.setItems(resp.videos);
         });
 
         client.on('video_status', (resp) => {
@@ -367,46 +646,77 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Playlist responses
+        client.on('set_playlist_response', (resp) => {
+            if (resp.success) {
+                client.startPlaylist();
+            }
+        });
+
+        client.on('start_playlist_response', (resp) => {
+            if (resp.success) client.getPlaylistStatus();
+        });
+
+        client.on('stop_playlist_response', (resp) => {
+            if (resp.success) {
+                playlistActive = false;
+                playlistCurrentIndex = -1;
+                renderPlaylist();
+                playlistStatusDisplay.textContent = 'Stopped';
+            }
+        });
+
+        client.on('next_video_response', (resp) => {
+            if (resp.success) {
+                playlistCurrentIndex = resp.currentIndex;
+                renderPlaylist();
+                client.getVideoStatus();
+            }
+        });
+
+        client.on('prev_video_response', (resp) => {
+            if (resp.success) {
+                playlistCurrentIndex = resp.currentIndex;
+                renderPlaylist();
+                client.getVideoStatus();
+            }
+        });
+
+        client.on('playlist_status', (resp) => {
+            if (!resp.success) return;
+            playlistActive = resp.active;
+            playlistCurrentIndex = resp.currentIndex;
+            playlistLoopCheck.checked = resp.loop;
+
+            // Sync playlist from device if we have no local edits
+            if (resp.videos && resp.videos.length > 0 && playlistVideos.length === 0) {
+                playlistVideos = [...resp.videos];
+            }
+
+            renderPlaylist();
+
+            if (resp.active) {
+                playlistStatusDisplay.innerHTML =
+                    `Playing <strong>${esc(resp.currentSource)}</strong> (${resp.currentIndex + 1}/${resp.videos.length})`;
+            } else {
+                playlistStatusDisplay.textContent = resp.videos.length > 0 ? 'Stopped' : '';
+            }
+        });
+
+        client.on('identify_response', () => {});
+
         // Connection state
         client.setConnectionCallback((connected) => {
             panel.classList.toggle('device-disconnected', !connected);
         });
 
         function setControlsEnabled(enabled) {
-            const sections = [infoSection, textureSection, videoSection];
-            sections.forEach(s => {
+            const allSections = panel.querySelectorAll('.section, .tab-pane-toolbar, .file-list-wrapper, .stream-section, .playlist-section');
+            allSections.forEach(s => {
                 s.querySelectorAll('button, input').forEach(el => {
                     el.disabled = !enabled;
                 });
                 s.style.opacity = enabled ? '1' : '0.4';
-            });
-        }
-
-        // Store textures for re-rendering
-        let lastTextures = [];
-
-        function renderTextureList(container, textures, client, active) {
-            lastTextures = textures;
-            refreshTextureDisplay(container, client, active);
-        }
-
-        function refreshTextureDisplay(container, client, active) {
-            container.innerHTML = '';
-            lastTextures.forEach(texture => {
-                const item = document.createElement('div');
-                item.className = 'texture-item';
-
-                const name = document.createElement('span');
-                name.className = 'texture-name' + (texture === active ? ' active' : '');
-                name.textContent = texture;
-                item.appendChild(name);
-
-                const setBtn = document.createElement('button');
-                setBtn.textContent = 'Set';
-                setBtn.onclick = () => client.setTexture(texture);
-                item.appendChild(setBtn);
-
-                container.appendChild(item);
             });
         }
 

@@ -168,6 +168,10 @@ export class DeviceClient {
         this.sendCommand({ command: 'set_device_name', name });
     }
 
+    identify(duration?: number): void {
+        this.sendCommand({ command: 'identify', duration });
+    }
+
     // Texture commands
     scanTextures(): void {
         this.sendCommand({ command: 'scan_textures' });
@@ -196,6 +200,40 @@ export class DeviceClient {
 
     getVideoStatus(): void {
         this.sendCommand({ command: 'get_video_status' });
+    }
+
+    // Video file commands
+    scanVideos(): void {
+        this.sendCommand({ command: 'scan_videos' });
+    }
+
+    listVideos(): void {
+        this.sendCommand({ command: 'list_videos' });
+    }
+
+    // Playlist commands
+    setPlaylist(videos: string[], loop?: boolean): void {
+        this.sendCommand({ command: 'set_playlist', videos, loop });
+    }
+
+    startPlaylist(index?: number): void {
+        this.sendCommand({ command: 'start_playlist', index });
+    }
+
+    stopPlaylist(): void {
+        this.sendCommand({ command: 'stop_playlist' });
+    }
+
+    nextVideo(): void {
+        this.sendCommand({ command: 'next_video' });
+    }
+
+    prevVideo(): void {
+        this.sendCommand({ command: 'prev_video' });
+    }
+
+    getPlaylistStatus(): void {
+        this.sendCommand({ command: 'get_playlist_status' });
     }
 
     // State

@@ -5,9 +5,12 @@ A web-based control panel for managing [Rendermatic](https://github.com/eimink/r
 ## Features
 
 - Automatic device discovery via mDNS (`_rendermatic._tcp`)
-- Multi-device dashboard with per-device controls
-- Texture management (scan, set)
+- Multi-device dashboard with tabbed per-device controls
+- Texture management (scan, filter, set)
+- Video file management (scan, filter, play)
 - Video playback (local files, RTMP, RTSP, SRT, HLS streams)
+- Playlist support (build, reorder, loop, prev/next controls)
+- Device identify (on-screen overlay showing hostname/IP/port)
 - Device authentication support
 - Device renaming
 - Manual device add for networks without mDNS

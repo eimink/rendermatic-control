@@ -59,6 +59,46 @@ export type GetVideoStatusCommand = {
     command: 'get_video_status';
 };
 
+export type ScanVideosCommand = {
+    command: 'scan_videos';
+};
+
+export type ListVideosCommand = {
+    command: 'list_videos';
+};
+
+export type IdentifyCommand = {
+    command: 'identify';
+    duration?: number;
+};
+
+export type SetPlaylistCommand = {
+    command: 'set_playlist';
+    videos: string[];
+    loop?: boolean;
+};
+
+export type StartPlaylistCommand = {
+    command: 'start_playlist';
+    index?: number;
+};
+
+export type StopPlaylistCommand = {
+    command: 'stop_playlist';
+};
+
+export type NextVideoCommand = {
+    command: 'next_video';
+};
+
+export type PrevVideoCommand = {
+    command: 'prev_video';
+};
+
+export type GetPlaylistStatusCommand = {
+    command: 'get_playlist_status';
+};
+
 export type ControlCommand =
     | AuthenticateCommand
     | SetAuthKeyCommand
@@ -66,13 +106,22 @@ export type ControlCommand =
     | GetAuthStatusCommand
     | GetDeviceInfoCommand
     | SetDeviceNameCommand
+    | IdentifyCommand
     | ScanTexturesCommand
     | ListTexturesCommand
     | LoadTextureCommand
     | SetTextureCommand
     | PlayVideoCommand
     | StopVideoCommand
-    | GetVideoStatusCommand;
+    | GetVideoStatusCommand
+    | ScanVideosCommand
+    | ListVideosCommand
+    | SetPlaylistCommand
+    | StartPlaylistCommand
+    | StopPlaylistCommand
+    | NextVideoCommand
+    | PrevVideoCommand
+    | GetPlaylistStatusCommand;
 
 // --- Response types ---
 
@@ -161,6 +210,53 @@ export type AuthRequiredResponse = BaseResponse & {
     command: 'auth_required';
 };
 
+export type ScanVideosResponse = BaseResponse & {
+    command: 'scan_videos_response';
+    videos: string[];
+};
+
+export type VideoListResponse = BaseResponse & {
+    command: 'video_list';
+    videos: string[];
+};
+
+export type IdentifyResponse = BaseResponse & {
+    command: 'identify_response';
+    duration: number;
+};
+
+export type SetPlaylistResponse = BaseResponse & {
+    command: 'set_playlist_response';
+    count: number;
+};
+
+export type StartPlaylistResponse = BaseResponse & {
+    command: 'start_playlist_response';
+};
+
+export type StopPlaylistResponse = BaseResponse & {
+    command: 'stop_playlist_response';
+};
+
+export type NextVideoResponse = BaseResponse & {
+    command: 'next_video_response';
+    currentIndex: number;
+};
+
+export type PrevVideoResponse = BaseResponse & {
+    command: 'prev_video_response';
+    currentIndex: number;
+};
+
+export type PlaylistStatusResponse = BaseResponse & {
+    command: 'playlist_status';
+    active: boolean;
+    videos: string[];
+    currentIndex: number;
+    currentSource: string;
+    loop: boolean;
+};
+
 export type ErrorResponse = BaseResponse & {
     command: 'error';
 };
@@ -172,6 +268,7 @@ export type ServerResponse =
     | ClearAuthKeyResponse
     | DeviceInfoResponse
     | DeviceNameResponse
+    | IdentifyResponse
     | ScanTexturesResponse
     | TextureListResponse
     | LoadTextureResponse
@@ -179,6 +276,14 @@ export type ServerResponse =
     | PlayVideoResponse
     | StopVideoResponse
     | VideoStatusResponse
+    | ScanVideosResponse
+    | VideoListResponse
+    | SetPlaylistResponse
+    | StartPlaylistResponse
+    | StopPlaylistResponse
+    | NextVideoResponse
+    | PrevVideoResponse
+    | PlaylistStatusResponse
     | AuthRequiredResponse
     | ErrorResponse;
 
