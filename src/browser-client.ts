@@ -117,6 +117,8 @@ export class DeviceClient {
             const handler = this.handlers.get(response.command);
             if (handler) {
                 handler(response);
+            } else {
+                console.log('[DeviceClient] unhandled response:', response.command, response);
             }
         };
 

@@ -190,6 +190,9 @@ export type DeviceInfoResponse = BaseResponse & {
     authRequired?: boolean;
     authenticated?: boolean;
     ndiAvailable?: boolean;
+    ndiMode?: boolean;
+    ndiConnected?: boolean;
+    ndiSource?: string;
 };
 
 export type DeviceNameResponse = BaseResponse & {
@@ -292,15 +295,14 @@ export type NdiSourcesResponse = BaseResponse & {
 
 export type SetNdiSourceResponse = BaseResponse & {
     command: 'set_ndi_source_response';
+    source?: string;
+    connected?: boolean;
 };
 
 export type NdiStatusResponse = BaseResponse & {
     command: 'ndi_status';
-    active: boolean;
+    connected: boolean;
     source: string;
-    width: number;
-    height: number;
-    fps: number;
 };
 
 export type StopNdiResponse = BaseResponse & {

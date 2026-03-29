@@ -632,7 +632,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resp.wsPort) html += `<span class="label">Port</span><span>${resp.wsPort}</span>`;
             if (resp.currentTexture) html += `<span class="label">Texture</span><span>${esc(resp.currentTexture)}</span>`;
             html += `<span class="label">Auth</span><span>${resp.authEnabled ? 'Enabled' : 'Disabled'}</span>`;
-            html += `<span class="label">NDI</span><span>${resp.ndiAvailable ? 'Available' : 'Not available'}</span>`;
+            html += `<span class="label">NDI</span><span>${resp.ndiAvailable ? (resp.ndiConnected ? 'Connected' : resp.ndiMode ? 'Active' : 'Available') : 'Not available'}</span>`;
+            if (resp.ndiSource) html += `<span class="label">NDI Source</span><span>${esc(resp.ndiSource)}</span>`;
             infoGrid.innerHTML = html;
 
             clearKeyBtn.style.display = resp.authEnabled ? '' : 'none';
@@ -641,10 +642,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resp.ndiAvailable && !ndiAvailable) {
                 ndiAvailable = true;
                 tabButtons['NDI'].style.display = '';
-                client.getNdiStatus();
             } else if (!resp.ndiAvailable) {
                 ndiAvailable = false;
                 tabButtons['NDI'].style.display = 'none';
+            }
+            if (resp.ndiAvailable) {
+                ndiConnecting = resp.ndiMode && !resp.ndiConnected;
+                client.getNdiStatus();
+                if (ndiConnecting) startNdiPoll();
             }
 
             textureList.refresh();
@@ -785,23 +790,45 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resp.success) ndiSourceList.setItems(resp.sources);
         });
 
+        let ndiPollTimer = null;
+        let ndiConnecting = false;
+        function startNdiPoll() {
+            stopNdiPoll();
+            ndiPollTimer = setInterval(() => client.getNdiStatus(), 2000);
+        }
+        function stopNdiPoll() {
+            if (ndiPollTimer) { clearInterval(ndiPollTimer); ndiPollTimer = null; }
+        }
+
         client.on('set_ndi_source_response', (resp) => {
-            if (resp.success) client.getNdiStatus();
+            if (resp.success) {
+                ndiConnecting = !resp.connected;
+                client.getNdiStatus();
+                if (!resp.connected) startNdiPoll();
+            }
         });
 
         client.on('ndi_status', (resp) => {
-            if (!resp.success) return;
-            if (resp.active) {
+            if (!resp.success) {
+                ndiStatusDisplay.className = 'ndi-status-display';
+                ndiStatusDisplay.textContent = resp.message || 'Failed to get NDI status';
+                return;
+            }
+            if (resp.connected) {
+                ndiConnecting = false;
+                stopNdiPoll();
                 activeNdiSource = resp.source;
                 ndiStatusDisplay.className = 'ndi-status-display active';
                 ndiStatusDisplay.innerHTML = `
                     <strong>Connected</strong>
                     <div class="video-meta">
                         <span class="label">Source</span><span>${esc(resp.source)}</span>
-                        <span class="label">Resolution</span><span>${resp.width}x${resp.height}</span>
-                        <span class="label">FPS</span><span>${resp.fps}</span>
                     </div>
                 `;
+            } else if (ndiConnecting && resp.source) {
+                activeNdiSource = resp.source;
+                ndiStatusDisplay.className = 'ndi-status-display';
+                ndiStatusDisplay.textContent = `Connecting to ${resp.source}…`;
             } else {
                 activeNdiSource = '';
                 ndiStatusDisplay.className = 'ndi-status-display';
@@ -811,12 +838,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         client.on('stop_ndi_response', (resp) => {
-            if (resp.success) {
-                activeNdiSource = '';
-                ndiStatusDisplay.className = 'ndi-status-display';
-                ndiStatusDisplay.textContent = 'No NDI source connected';
-                ndiSourceList.refresh();
-            }
+            ndiConnecting = false;
+            stopNdiPoll();
+            if (resp.success) client.getNdiStatus();
         });
 
         // Rotation response
@@ -827,6 +851,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Connection state
         client.setConnectionCallback((connected) => {
             panel.classList.toggle('device-disconnected', !connected);
+            if (!connected) stopNdiPoll();
         });
 
         function setControlsEnabled(enabled) {
