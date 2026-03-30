@@ -32,14 +32,17 @@ wss.on('connection', (ws: WebSocket) => {
 });
 
 discovery.on('device_found', (device) => {
+    console.log('[discovery] found:', device.id, device.instanceName);
     broadcast({ type: 'device_found', device });
 });
 
 discovery.on('device_lost', (deviceId: string) => {
+    console.log('[discovery] lost:', deviceId);
     broadcast({ type: 'device_lost', deviceId });
 });
 
 discovery.start();
+console.log('[discovery] mDNS browser started');
 
 server.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
