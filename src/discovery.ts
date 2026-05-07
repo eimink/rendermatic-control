@@ -3,7 +3,6 @@ import { EventEmitter } from 'events';
 import type { DiscoveredDevice } from './types.ts';
 
 const REFRESH_INTERVAL = 30_000;
-const SETTLE_TIME = 5_000;
 
 export class DiscoveryService extends EventEmitter {
     private bonjour: InstanceType<typeof Bonjour>;
@@ -18,28 +17,6 @@ export class DiscoveryService extends EventEmitter {
     }
 
     start(): void {
-        this.startBrowser();
-
-        // Periodically restart the browser to detect IP changes.
-        // bonjour-service silently swallows address changes when TXT
-        // records haven't changed, so a simple update() isn't enough.
-        this.refreshTimer = setInterval(() => this.refresh(), REFRESH_INTERVAL);
-    }
-
-    stop(): void {
-        if (this.refreshTimer) {
-            clearInterval(this.refreshTimer);
-            this.refreshTimer = null;
-        }
-        this.stopBrowser();
-        this.bonjour.destroy();
-    }
-
-    getDevices(): DiscoveredDevice[] {
-        return Array.from(this.devices.values());
-    }
-
-    private startBrowser(): void {
         const browser = this.bonjour.find({ type: 'rendermatic' });
         this.browser = browser;
 
@@ -56,13 +33,34 @@ export class DiscoveryService extends EventEmitter {
                 this.emit('device_lost', id);
             }
         });
+
+        // Periodically clear the browser's internal cache and re-query.
+        // bonjour-service tracks known services by fqdn and silently
+        // ignores responses for already-known services when only the
+        // address changed. Clearing the cache forces it to treat every
+        // response as a new service, and our handleUp deduplicates.
+        this.refreshTimer = setInterval(() => {
+            const b = this.browser as any;
+            b.serviceMap = {};
+            b._services = [];
+            browser.update();
+        }, REFRESH_INTERVAL);
     }
 
-    private stopBrowser(): void {
+    stop(): void {
+        if (this.refreshTimer) {
+            clearInterval(this.refreshTimer);
+            this.refreshTimer = null;
+        }
         if (this.browser) {
             this.browser.stop();
             this.browser = null;
         }
+        this.bonjour.destroy();
+    }
+
+    getDevices(): DiscoveredDevice[] {
+        return Array.from(this.devices.values());
     }
 
     private handleUp(service: Service): void {
@@ -94,40 +92,6 @@ export class DiscoveryService extends EventEmitter {
             this.devices.set(id, device);
             this.emit('device_found', device);
         }
-    }
-
-    private refresh(): void {
-        // Restart the browser to get a clean discovery pass
-        this.stopBrowser();
-        const seen = new Set<string>();
-        const prevInstances = new Map(this.instanceToId);
-
-        this.startBrowser();
-
-        // Temporarily intercept 'up' to track which instances responded
-        const origHandleUp = this.handleUp.bind(this);
-        const trackingHandler = (service: Service) => {
-            seen.add(service.name);
-            origHandleUp(service);
-        };
-        this.browser!.removeAllListeners('up');
-        this.browser!.on('up', trackingHandler);
-
-        // After settling, prune devices that didn't respond
-        setTimeout(() => {
-            if (!this.browser) return;
-            // Restore normal handler
-            this.browser.removeAllListeners('up');
-            this.browser.on('up', (service: Service) => this.handleUp(service));
-
-            for (const [instanceName, id] of prevInstances) {
-                if (!seen.has(instanceName) && this.devices.has(id)) {
-                    this.devices.delete(id);
-                    this.instanceToId.delete(instanceName);
-                    this.emit('device_lost', id);
-                }
-            }
-        }, SETTLE_TIME);
     }
 
     private extractIPv4(service: Service): string | null {
